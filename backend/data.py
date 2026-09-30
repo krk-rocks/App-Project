@@ -1,0 +1,196 @@
+"""Tamil Nadu destination content.
+
+Worship 'sessions' are [open, close] pairs in 24h local time; many temples close at midday and reopen
+in the evening. Timings and festival months are indicative and change on festival days - confirm locally.
+"""
+
+DESTINATIONS = [
+    {
+        "id": "madurai", "name": "Madurai", "country": "India", "region": "Tamil Nadu",
+        "lat": 9.9252, "lon": 78.1198, "category": "Temple Town", "hue": 350,
+        "tagline": "The city that never sleeps, ruled by Meenakshi",
+        "summary": "Over 2,500 years old, Madurai is built in concentric streets around the Meenakshi Amman Temple, and its markets, jasmine stalls and late-night food streets never quite close.",
+        "highlights": ["Meenakshi Amman Temple towers", "Thirumalai Nayak Palace", "Gandhi Memorial Museum", "Jigarthanda and kari dosai", "Vaigai river and Alagar Kovil"],
+        "best_time": "October to March", "history": "The Pandya capital and a Sangam-era seat of Tamil literature, Madurai was rebuilt by the Nayaks in the 16th-17th centuries, who raised the temple's gopurams.",
+        "events": [
+            {"name": "Chithirai Festival", "month": "April/May", "description": "The celestial wedding of Meenakshi and Sundareswarar, followed by Lord Alagar's entry into the Vaigai river."},
+            {"name": "Theppam (Float) Festival", "month": "January/February", "description": "Deities are floated on an illuminated boat in the Mariamman Teppakulam tank."},
+            {"name": "Avani Moolam", "month": "August/September", "description": "A month of celebrations recalling Shiva's Thiruvilaiyadals."},
+            {"name": "Pongal & Jallikattu at Alanganallur", "month": "January", "description": "Bull-taming sport held near Madurai during Pongal."},
+        ],
+        "worship": [
+            {"name": "Meenakshi Amman Temple", "type": "temple", "sessions": [["05:00", "12:30"], ["16:00", "22:00"]], "note": "Ardha Jama pooja around 21:00; shorter queues on weekday mornings"},
+            {"name": "Thirupparankundram Murugan Temple", "type": "temple", "sessions": [["05:30", "13:00"], ["16:00", "21:00"]], "note": "One of Murugan's six abodes"},
+            {"name": "St. Mary's Cathedral", "type": "church", "sessions": [["06:00", "19:00"]], "note": "Mass in the morning and evening; Sunday mass is the busiest"},
+            {"name": "Goripalayam Dargah", "type": "mosque", "sessions": [["05:00", "21:00"]], "note": "Open to visitors of all faiths; Thursdays are busiest"},
+        ],
+    },
+    {
+        "id": "rameswaram", "name": "Rameswaram", "country": "India", "region": "Tamil Nadu",
+        "lat": 9.2876, "lon": 79.3129, "category": "Pilgrimage", "hue": 195,
+        "tagline": "An island of pilgrims at the edge of India",
+        "summary": "Reached by the Pamban Bridge, Rameswaram is one of the Char Dham sites, with a temple of long corridors and 22 holy wells, and Dhanushkodi, a ghost town on a sandbar.",
+        "highlights": ["Ramanathaswamy Temple corridors", "Bathing at the 22 theerthams", "Pamban Bridge", "Dhanushkodi ghost town", "Dr. A.P.J. Abdul Kalam Memorial"],
+        "best_time": "October to April", "history": "Tradition says Rama worshipped Shiva here before crossing to Lanka. The temple's 1,200-pillar corridor was built between the 12th and 17th centuries.",
+        "events": [
+            {"name": "Maha Shivaratri", "month": "February/March", "description": "Ten days of festivities and a night-long vigil at the temple."},
+            {"name": "Thai Amavasai & Aadi Amavasai", "month": "January & July", "description": "Thousands take a dip in the sea for ancestral rites."},
+            {"name": "Ramanathaswamy Brahmotsavam", "month": "July/August", "description": "Chariot processions and the sacred wedding rituals."},
+            {"name": "Katchatheevu St. Antony's Festival", "month": "March", "description": "Annual church festival at the island."},
+        ],
+        "worship": [
+            {"name": "Ramanathaswamy Temple", "type": "temple", "sessions": [["05:00", "13:00"], ["15:00", "21:00"]], "note": "Theertham bathing begins early; Ramanathar Sphatika Lingam darshan at 05:00"},
+            {"name": "Our Lady of Ransom Church", "type": "church", "sessions": [["06:00", "19:00"]], "note": ""},
+        ],
+    },
+    {
+        "id": "thanjavur", "name": "Thanjavur", "country": "India", "region": "Tamil Nadu",
+        "lat": 10.7870, "lon": 79.1378, "category": "Heritage", "hue": 32,
+        "tagline": "Capital of the Cholas and cradle of Carnatic arts",
+        "summary": "Home to the Brihadisvara Temple, a 1,000-year-old granite masterpiece, plus bronze casting, Tanjore paintings and the Saraswathi Mahal Library.",
+        "highlights": ["Brihadisvara (Big) Temple", "Thanjavur Maratha Palace", "Saraswathi Mahal Library", "Tanjore painting workshops", "Nearby Gangaikonda Cholapuram and Darasuram"],
+        "best_time": "November to February", "history": "Rajaraja Chola I built the Brihadisvara Temple in 1010 CE. The temple, with its 66 m vimana, is a UNESCO World Heritage Site (Great Living Chola Temples).",
+        "events": [
+            {"name": "Sadhaya Vizha", "month": "October/November", "description": "Birth star of Rajaraja Chola celebrated with a procession and cultural events."},
+            {"name": "Thyagaraja Aradhana (Thiruvaiyaru)", "month": "January", "description": "A five-day music festival where hundreds of musicians sing the saint's kritis, held 13 km away."},
+            {"name": "Chithirai Brahmotsavam", "month": "April/May", "description": "Temple car festival at the Big Temple."},
+            {"name": "Thanjavur Bommai & Dance Festival", "month": "January/February", "description": "Bharatanatyam and Carnatic performances in the palace."},
+        ],
+        "worship": [
+            {"name": "Brihadisvara Temple", "type": "temple", "sessions": [["06:00", "12:30"], ["16:00", "20:30"]], "note": "Nandi shrine and Pradosham evenings are special; archaeological site open during the day"},
+            {"name": "Schwartz Church (CSI Christ Church)", "type": "church", "sessions": [["09:00", "17:00"]], "note": "Built in 1779"},
+            {"name": "Periyakovil Jamia Masjid", "type": "mosque", "sessions": [["05:00", "21:00"]], "note": "Five daily prayers"},
+        ],
+    },
+    {
+        "id": "kanyakumari", "name": "Kanyakumari", "country": "India", "region": "Tamil Nadu",
+        "lat": 8.0883, "lon": 77.5385, "category": "Coastal", "hue": 215,
+        "tagline": "Where three seas meet at India's southern tip",
+        "summary": "The Bay of Bengal, Arabian Sea and Indian Ocean meet here, and travellers watch both sunrise and sunset from the same shore, with the Vivekananda Rock and a 133-ft Thiruvalluvar statue offshore.",
+        "highlights": ["Sunrise at the triveni sangamam", "Vivekananda Rock Memorial", "Thiruvalluvar Statue", "Gandhi Mandapam", "Padmanabhapuram Palace nearby"],
+        "best_time": "October to March", "history": "A sacred site for over two millennia, it is named for the goddess Kanya Kumari. Swami Vivekananda meditated here in 1892.",
+        "events": [
+            {"name": "Chitra Pournami", "month": "April", "description": "On this full moon, the sun sets and the moon rises together over the sea."},
+            {"name": "Vaikasi Visakam", "month": "May/June", "description": "Car festival at the Bhagavathi Amman Temple."},
+            {"name": "Navaratri Festival", "month": "September/October", "description": "Nine nights of pooja and processions."},
+            {"name": "Thiruvalluvar & Vivekananda Jayanti", "month": "January", "description": "Cultural events around the monuments."},
+        ],
+        "worship": [
+            {"name": "Kumari Amman (Bhagavathi Amman) Temple", "type": "temple", "sessions": [["04:30", "12:00"], ["16:00", "20:00"]], "note": "Men must remove shirts to enter the sanctum"},
+            {"name": "Our Lady of Ransom Church", "type": "church", "sessions": [["06:00", "20:00"]], "note": "A sea-facing Gothic church"},
+        ],
+    },
+    {
+        "id": "ooty", "name": "Ooty (Udhagamandalam)", "country": "India", "region": "Tamil Nadu",
+        "lat": 11.4102, "lon": 76.6950, "category": "Hill Station", "hue": 140,
+        "tagline": "The Queen of Hill Stations in the Nilgiris",
+        "summary": "Tea gardens, eucalyptus forests, colonial cottages and a UNESCO-listed toy train wind through the Nilgiri hills at 2,240 m.",
+        "highlights": ["Nilgiri Mountain Railway", "Government Botanical Garden", "Doddabetta Peak", "Ooty Lake boating", "Tea factory visits"],
+        "best_time": "March to June and September to November", "history": "Developed by the British as a summer retreat from Madras in the early 19th century. The Toda people are the region's original inhabitants.",
+        "events": [
+            {"name": "Ooty Flower Show", "month": "May", "description": "Botanical Garden showcases thousands of blooms and floral sculptures."},
+            {"name": "Ooty Summer Festival", "month": "May", "description": "Boat race, dog show, vegetable show and cultural programmes."},
+            {"name": "Tea and Tourism Festival", "month": "January/February", "description": "Tea tastings and cultural events."},
+            {"name": "Coonoor Fruit Show (Sim's Park)", "month": "May", "description": "Nearby town's annual fruit and vegetable exhibition."},
+        ],
+        "worship": [
+            {"name": "St. Stephen's Church", "type": "church", "sessions": [["06:00", "18:00"]], "note": "1829 colonial church; Sunday services in the morning"},
+            {"name": "Ooty Mariamman Temple", "type": "temple", "sessions": [["06:00", "12:00"], ["16:00", "20:00"]], "note": ""},
+            {"name": "Ooty Jama Masjid", "type": "mosque", "sessions": [["05:00", "21:00"]], "note": ""},
+        ],
+    },
+    {
+        "id": "kodaikanal", "name": "Kodaikanal", "country": "India", "region": "Tamil Nadu",
+        "lat": 10.2381, "lon": 77.4892, "category": "Hill Station", "hue": 160,
+        "tagline": "The Princess of Hill Stations",
+        "summary": "A star-shaped lake, misty pine forests and cliff-edge viewpoints mark this quiet Palani Hills retreat.",
+        "highlights": ["Kodai Lake", "Coaker's Walk", "Pillar Rocks", "Bryant Park", "Silver Cascade falls"],
+        "best_time": "September to May", "history": "Founded by American missionaries in 1845 as an escape from plains fevers. The rare kurinji flower blooms once every 12 years.",
+        "events": [
+            {"name": "Kodai Summer Festival & Flower Show", "month": "May", "description": "Flower show at Bryant Park, boat races and horse shows."},
+            {"name": "Kurinji Bloom", "month": "Once every 12 years", "description": "The hills turn blue; the last big bloom was 2018, the next is expected around 2030."},
+            {"name": "Kodaikanal Literary & Arts Festival", "month": "Winter", "description": "Small-town talks and workshops."},
+            {"name": "Kurinji Andavar Temple Festivals", "month": "Thai Poosam (Jan/Feb)", "description": "Special poojas at the hill's Murugan temple."},
+        ],
+        "worship": [
+            {"name": "Kurinji Andavar Temple", "type": "temple", "sessions": [["06:00", "12:00"], ["16:00", "18:30"]], "note": "Dedicated to Murugan, overlooking the Palani plains"},
+            {"name": "Our Lady of Lourdes Church", "type": "church", "sessions": [["06:00", "18:00"]], "note": ""},
+            {"name": "Kodaikanal Jama Masjid", "type": "mosque", "sessions": [["05:00", "21:00"]], "note": ""},
+        ],
+    },
+    {
+        "id": "mahabalipuram", "name": "Mahabalipuram", "country": "India", "region": "Tamil Nadu",
+        "lat": 12.6208, "lon": 80.1928, "category": "Heritage", "hue": 25,
+        "tagline": "Rock-cut poetry by the Bay of Bengal",
+        "summary": "Pallava-era shore temples, monolithic rathas and vast bas-reliefs, including the Descent of the Ganga, in a UNESCO World Heritage seaside town.",
+        "highlights": ["Shore Temple", "Five Rathas", "Arjuna's Penance", "Krishna's Butter Ball", "Stone-carving workshops"],
+        "best_time": "November to February", "history": "A port of the Pallava dynasty in the 7th-8th centuries, with sculpture traditions still alive in the town's workshops.",
+        "events": [
+            {"name": "Mamallapuram Dance Festival", "month": "December/January", "description": "Classical dance recitals against the Arjuna's Penance backdrop."},
+            {"name": "Pongal Celebrations", "month": "January", "description": "Village harvest festivities and kolam contests."},
+            {"name": "Masi Magam", "month": "February/March", "description": "Deities from nearby temples are taken to the sea for a ritual bath."},
+            {"name": "Vaikunta Ekadasi at Sthalasayana Perumal", "month": "December/January", "description": "Heaven's gate opening ritual at the Vishnu temple."},
+        ],
+        "worship": [
+            {"name": "Sthalasayana Perumal Temple", "type": "temple", "sessions": [["06:00", "12:00"], ["16:00", "20:30"]], "note": "An active Vishnu temple in the town"},
+            {"name": "Shore Temple", "type": "temple", "sessions": [["06:00", "18:00"]], "note": "ASI-protected monument; ticketed visits, no daily worship"},
+        ],
+    },
+    {
+        "id": "chennai", "name": "Chennai", "country": "India", "region": "Tamil Nadu",
+        "lat": 13.0827, "lon": 80.2707, "category": "City", "hue": 275,
+        "tagline": "Music, temples and the Marina",
+        "summary": "Tamil Nadu's capital fuses colonial Fort St. George, Mylapore's temples and San Thome Basilica with Carnatic concerts, filter coffee and the world's second longest urban beach.",
+        "highlights": ["Marina Beach", "Kapaleeshwarar Temple", "San Thome Basilica", "Fort St. George Museum", "Government Museum"],
+        "best_time": "November to February", "history": "Founded by the British East India Company in 1639, on much older ports such as Mylapore, which dates back over 2,000 years.",
+        "events": [
+            {"name": "Margazhi Music & Dance Season", "month": "December-January", "description": "Thousands of Carnatic and Bharatanatyam concerts across sabhas."},
+            {"name": "Chennai Sangamam / Pongal", "month": "January", "description": "Folk arts festival and harvest celebrations."},
+            {"name": "Chennai Book Fair", "month": "January", "description": "One of India's biggest book fairs."},
+            {"name": "Panguni Peruvizha (Mylapore)", "month": "March/April", "description": "Arupathumoovar procession and chariot festival at Kapaleeshwarar Temple."},
+        ],
+        "worship": [
+            {"name": "Kapaleeshwarar Temple", "type": "temple", "sessions": [["05:00", "12:00"], ["16:00", "21:00"]], "note": "Mylapore; busiest on Fridays and Pradosham"},
+            {"name": "Parthasarathy Temple", "type": "temple", "sessions": [["06:30", "12:00"], ["16:00", "20:30"]], "note": "Triplicane"},
+            {"name": "San Thome Basilica", "type": "church", "sessions": [["06:00", "20:00"]], "note": "Built over the tomb of St. Thomas; mass in multiple languages"},
+            {"name": "Wallajah Big Mosque", "type": "mosque", "sessions": [["05:00", "21:30"]], "note": "Triplicane; five daily prayers"},
+        ],
+    },
+    {
+        "id": "velankanni", "name": "Velankanni", "country": "India", "region": "Tamil Nadu",
+        "lat": 10.6819, "lon": 79.8440, "category": "Pilgrimage", "hue": 55,
+        "tagline": "The Lourdes of the East",
+        "summary": "The Basilica of Our Lady of Good Health on the Bay of Bengal draws pilgrims of every faith, and the shrine of Nagore Dargah is a short drive away.",
+        "highlights": ["Basilica of Our Lady of Good Health", "Sea-shore Church", "Nagore Dargah (12 km)", "Velankanni beach", "Museum of votive offerings"],
+        "best_time": "October to March", "history": "Apparitions of Mary are said to have occurred in the 16th and 17th centuries; the basilica was raised to minor basilica status in 1962.",
+        "events": [
+            {"name": "Annual Feast (Nativity of Mary)", "month": "Aug 29 - Sep 8", "description": "Millions of pilgrims attend the flag hoisting, nightly processions and the final feast day."},
+            {"name": "Christmas & New Year Vigil", "month": "December", "description": "Midnight masses and a large pilgrim crowd."},
+            {"name": "Nagore Kandoori Festival", "month": "Jumada al-Thani (varies)", "description": "Annual urs at Nagore Dargah, with a flag procession."},
+            {"name": "Lent & Good Friday Processions", "month": "March/April", "description": "Way of the cross along the beach."},
+        ],
+        "worship": [
+            {"name": "Basilica of Our Lady of Good Health", "type": "church", "sessions": [["05:00", "21:30"]], "note": "Mass in Tamil, English, Malayalam, Konkani and Hindi at set times"},
+            {"name": "Nagore Dargah", "type": "mosque", "sessions": [["05:00", "22:00"]], "note": "In Nagapattinam district; open to all"},
+        ],
+    },
+    {
+        "id": "kanchipuram", "name": "Kanchipuram", "country": "India", "region": "Tamil Nadu",
+        "lat": 12.8342, "lon": 79.7036, "category": "Temple Town", "hue": 315,
+        "tagline": "City of a thousand temples and silk weavers",
+        "summary": "One of India's seven sacred cities, Kanchipuram pairs Pallava and Chola temples with handloom silk saris woven for centuries.",
+        "highlights": ["Ekambareswarar Temple", "Kamakshi Amman Temple", "Varadharaja Perumal Temple", "Kailasanathar Temple", "Silk weaving cooperatives"],
+        "best_time": "October to March", "history": "The capital of the Pallavas in the 6th-8th centuries and a centre of Buddhist, Jain and Hindu learning.",
+        "events": [
+            {"name": "Panguni Uthiram", "month": "March/April", "description": "Wedding festival at Ekambareswarar Temple."},
+            {"name": "Vaikasi Brahmotsavam & Garuda Sevai", "month": "May/June", "description": "Deity procession on Garuda at Varadharaja Perumal Temple."},
+            {"name": "Athi Varadar Darshan", "month": "Once every 40 years", "description": "Deity emerges from the temple pond (last in 2019)."},
+            {"name": "Silk & Handloom Expo", "month": "January", "description": "Weaving demonstrations and fairs."},
+        ],
+        "worship": [
+            {"name": "Ekambareswarar Temple", "type": "temple", "sessions": [["06:00", "12:30"], ["16:00", "20:30"]], "note": "Ancient mango tree in the courtyard"},
+            {"name": "Kamakshi Amman Temple", "type": "temple", "sessions": [["05:30", "12:00"], ["16:00", "21:00"]], "note": "One of the Shakti Peethas"},
+            {"name": "Varadharaja Perumal Temple", "type": "temple", "sessions": [["06:00", "12:00"], ["16:00", "20:00"]], "note": ""},
+        ],
+    },
+]

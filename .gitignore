@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+.venv/
+__pycache__/
+*.py[cod]
+
+# local account + booking store: holds password hashes and session tokens
+backend/store.json
+backend/store.json.tmp
+
+# build output
+dist/
+build/
+*.local
+
+# env
+.env
+.env.*
+!.env.example
+
+# editor / OS
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
