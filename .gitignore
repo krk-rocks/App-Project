@@ -1,30 +1,48 @@
-# dependencies
+# ---- dependencies ----
 node_modules/
 .venv/
+venv/
+env/
 __pycache__/
 *.py[cod]
 
-# local account + booking store: holds password hashes and session tokens
+# ---- local data store ----
+# Holds password hashes, session tokens and bookings. Never commit.
 backend/store.json
 backend/store.json.tmp
+backend/store.json.probe
+*.sqlite
+*.sqlite3
+*.db
 
-# build output
+# ---- build output ----
 dist/
 build/
+.vite/
 *.local
 
-# env
+# ---- environment ----
 .env
 .env.*
 !.env.example
 
-# editor / OS
+# ---- deploy tooling ----
+.vercel/
+.netlify/
+
+# ---- test / cache ----
+.pytest_cache/
+coverage/
+*.log
+
+# ---- editor / OS ----
 .DS_Store
 Thumbs.db
 *.swp
 .idea/
-.vscode/
 
-# local env
-client/.env
-client/.env.local
+# Keep the shared VS Code run config, ignore personal settings
+.vscode/*
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
