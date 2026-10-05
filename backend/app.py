@@ -1,3 +1,4 @@
+import os
 import time
 
 import requests
@@ -5,11 +6,16 @@ from flask import Flask, g, jsonify, request, abort
 from flask_cors import CORS
 
 import auth
+import store
 import transport
 from data import DESTINATIONS
 
 app = Flask(__name__)
-CORS(app)
+
+# In production the frontend is served from another origin, so it must be allowed explicitly.
+# CORS_ORIGINS is a comma-separated list; "*" (the default) suits a public read-mostly demo.
+_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",") if o.strip()]
+CORS(app, resources={r"/api/*": {"origins": _origins}}, supports_credentials=False)
 
 BY_ID = {d["id"]: d for d in DESTINATIONS}
 WEATHER_CACHE = {}
@@ -201,5 +207,13 @@ def cancel_booking(booking_id):
     return jsonify(rec)
 
 
+@app.get("/api/health")
+def health():
+    """Platform health checks hit this; it also tells you whether the store is writable."""
+    return jsonify({"ok": True, "persistent": store.WRITABLE, "destinations": len(DESTINATIONS)})
+
+
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    # PORT is injected by Render/Railway/Fly; default matches the Vite dev proxy.
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)),
+            debug=os.environ.get("FLASK_DEBUG", "1") == "1")

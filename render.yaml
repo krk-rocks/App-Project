@@ -1,0 +1,39 @@
+# One-click blueprint: deploys the Flask API and the built React client together.
+# On Render: New > Blueprint > point at this repo. Both services are on the free tier.
+services:
+  - type: web
+    name: monsoon-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 60
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.10"
+      - key: FLASK_DEBUG
+        value: "0"
+      # Lock this to the client URL below once it is deployed.
+      - key: CORS_ORIGINS
+        value: "*"
+      # Free tier has no persistent disk, so accounts reset when the service sleeps.
+      # Add a paid disk mounted at /var/data and set DATA_DIR=/var/data to keep them.
+
+  - type: web
+    name: monsoon-client
+    runtime: static
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: monsoon-api
+          type: web
+          property: hostport
+    routes:
+      # SPA fallback so /destination/madurai and /bookings resolve on a hard refresh.
+      - type: rewrite
+        source: /*
+        destination: /index.html

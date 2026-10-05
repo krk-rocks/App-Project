@@ -1,11 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
+// In dev the Vite proxy forwards /api to Flask. In production the API lives on its own
+// origin, so VITE_API_URL is baked in at build time (empty = same origin).
+const RAW_BASE = import.meta.env.VITE_API_URL || ''
+export const API_BASE = RAW_BASE.endsWith('/') ? RAW_BASE.slice(0, -1) : RAW_BASE
+
 const KEY = 'monsoon.token'
 const AuthContext = createContext(null)
 
 export function api(path, { method = 'GET', body, token } = {}) {
   const t = token ?? localStorage.getItem(KEY)
-  return fetch(path, {
+  return fetch(API_BASE + path, {
     method,
     headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(t ? { Authorization: `Bearer ${t}` } : {}) },
     body: body ? JSON.stringify(body) : undefined,

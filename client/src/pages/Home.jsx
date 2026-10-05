@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import TiltCard from '../components/TiltCard.jsx'
+import { api } from '../auth.jsx'
 
 const INK = '#1f1f1f'
 const FEATURED = ['Madurai', 'Rameswaram', 'Ooty', 'Thanjavur', 'Mahabalipuram']
@@ -19,12 +20,12 @@ export default function Home() {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    fetch('/api/categories').then((r) => r.json()).then(setCats).catch(() => setError(true))
+    api('/api/categories').then(setCats).catch(() => setError(true))
   }, [])
   useEffect(() => {
     const t = setTimeout(() => {
       const p = new URLSearchParams({ q, category: cat })
-      fetch('/api/destinations?' + p).then((r) => r.json()).then((d) => { setItems(d); setError(false) }).catch(() => setError(true))
+      api('/api/destinations?' + p).then((d) => { setItems(d); setError(false) }).catch(() => setError(true))
     }, 200)
     return () => clearTimeout(t)
   }, [q, cat])

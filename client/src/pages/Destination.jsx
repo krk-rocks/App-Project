@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Scene from '../components/Scene.jsx'
 import Weather from '../components/Weather.jsx'
 import GettingThere from '../components/GettingThere.jsx'
+import { api } from '../auth.jsx'
 
 const ICON = { temple: '🛕', church: '⛪', mosque: '🕌' }
 const to12 = (t) => {
@@ -24,8 +25,8 @@ export default function Destination() {
 
   useEffect(() => {
     setD(null); setWeather(null); setWErr(false); setNotFound(false)
-    fetch(`/api/destinations/${id}`).then((r) => (r.ok ? r.json() : Promise.reject())).then(setD).catch(() => setNotFound(true))
-    fetch(`/api/destinations/${id}/weather`).then((r) => (r.ok ? r.json() : Promise.reject())).then(setWeather).catch(() => setWErr(true))
+    api(`/api/destinations/${id}`).then(setD).catch(() => setNotFound(true))
+    api(`/api/destinations/${id}/weather`).then(setWeather).catch(() => setWErr(true))
   }, [id])
 
   if (notFound) return <main className="section dark page"><h2 className="big">Destination not found</h2><Link to="/" className="btn btn-light">← Back home</Link></main>
