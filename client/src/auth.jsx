@@ -15,7 +15,18 @@ export function api(path, { method = 'GET', body, token } = {}) {
     headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(t ? { Authorization: `Bearer ${t}` } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   }).then(async (r) => {
-    const data = await r.json().catch(() => ({}))
+    // Never hand back a silent {} - a misrouted call can return the HTML shell with a
+    // 200, and callers that spread the result then crash the whole tree.
+    const text = await r.text()
+    let data = null
+    try { data = text ? JSON.parse(text) : {} } catch { data = null }
+    if (data === null) {
+      throw new Error(
+        r.ok
+          ? 'The API returned a non-JSON response. Check that VITE_API_URL points at the backend.'
+          : `Request failed (${r.status}).`,
+      )
+    }
     if (!r.ok) throw new Error(data.error || 'Something went wrong. Try again.')
     return data
   })
