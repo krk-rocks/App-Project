@@ -1,9 +1,12 @@
-# Blueprint: deploys the Flask API and the built React client together.
-# Render -> New -> Blueprint -> pick this repo. Both services are free tier.
+# Blueprint for the Flask API only - the React client is hosted on Vercel.
 #
-# After the first deploy, set monsoon-client's VITE_API_URL to the API's URL
-# (e.g. https://monsoon-api.onrender.com) and redeploy the client. It is baked
-# into the bundle at build time, so it needs a rebuild to take effect.
+# Render -> New -> Blueprint -> pick this repo -> branch 1st-review(tix-booking).
+# Everything below is applied automatically, so there are no dashboard fields to
+# get wrong (a Node runtime or an empty root directory makes Render look for a
+# package.json at the repo root and fail).
+#
+# After it deploys, set VITE_API_URL in Vercel to this service's URL and redeploy
+# there - the client bakes that value in at build time.
 services:
   - type: web
     name: monsoon-api
@@ -19,19 +22,4 @@ services:
       - key: FLASK_DEBUG
         value: "0"
       - key: CORS_ORIGINS
-        value: "*"          # tighten to the client URL once it is live
-
-  - type: web
-    name: monsoon-client
-    runtime: static
-    rootDir: client
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
-    envVars:
-      - key: VITE_API_URL
-        sync: false          # set this by hand in the dashboard after the API deploys
-    routes:
-      # SPA fallback so /destination/madurai and /bookings survive a hard refresh.
-      - type: rewrite
-        source: /*
-        destination: /index.html
+        value: "https://app-project-eight-cyan.vercel.app"
