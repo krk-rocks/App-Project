@@ -1,5 +1,9 @@
-# One-click blueprint: deploys the Flask API and the built React client together.
-# On Render: New > Blueprint > point at this repo. Both services are on the free tier.
+# Blueprint: deploys the Flask API and the built React client together.
+# Render -> New -> Blueprint -> pick this repo. Both services are free tier.
+#
+# After the first deploy, set monsoon-client's VITE_API_URL to the API's URL
+# (e.g. https://monsoon-api.onrender.com) and redeploy the client. It is baked
+# into the bundle at build time, so it needs a rebuild to take effect.
 services:
   - type: web
     name: monsoon-api
@@ -14,11 +18,8 @@ services:
         value: "3.12.10"
       - key: FLASK_DEBUG
         value: "0"
-      # Lock this to the client URL below once it is deployed.
       - key: CORS_ORIGINS
-        value: "*"
-      # Free tier has no persistent disk, so accounts reset when the service sleeps.
-      # Add a paid disk mounted at /var/data and set DATA_DIR=/var/data to keep them.
+        value: "*"          # tighten to the client URL once it is live
 
   - type: web
     name: monsoon-client
@@ -28,12 +29,9 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          name: monsoon-api
-          type: web
-          property: hostport
+        sync: false          # set this by hand in the dashboard after the API deploys
     routes:
-      # SPA fallback so /destination/madurai and /bookings resolve on a hard refresh.
+      # SPA fallback so /destination/madurai and /bookings survive a hard refresh.
       - type: rewrite
         source: /*
         destination: /index.html
