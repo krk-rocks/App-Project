@@ -136,6 +136,7 @@ export default function Home() {
           {items.map((d, i) => <TiltCard key={d.id} d={d} index={i} />)}
         </div>
         {!error && items.length === 0 && <p className="muted-l">No destinations match your search.</p>}
+        {items.length > 0 && <p className="muted small photo-note">Photos from Wikimedia Commons, credited on each destination page.</p>}
       </section>
     </main>
   )

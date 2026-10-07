@@ -9,7 +9,7 @@
 # there - the client bakes that value in at build time.
 services:
   - type: web
-    name: monsoon-api
+    name: epic-tn-api
     runtime: python
     rootDir: backend
     plan: free

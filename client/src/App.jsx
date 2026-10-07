@@ -18,7 +18,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/bookings" element={<Bookings />} />
       </Routes>
-      <footer className="footer">© 2026 Monsoon · Timings and events are indicative; confirm locally before you travel. Bookings are simulated.</footer>
+      <footer className="footer">© 2026 Epic TN · Timings and events are indicative; confirm locally before you travel. Bookings are simulated.</footer>
     </>
   )
 }

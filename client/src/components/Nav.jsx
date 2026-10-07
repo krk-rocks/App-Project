@@ -29,11 +29,12 @@ export default function Nav() {
           boxShadow: '0 6px 24px rgba(0,0,0,0.12)',
         }}
       >
-        <Link to="/" style={{ fontSize: '17px', fontWeight: 700, color: INK, letterSpacing: '-0.01em', textDecoration: 'none' }}>Monsoon</Link>
+        <Link to="/" style={{ fontSize: '17px', fontWeight: 700, color: INK, letterSpacing: '-0.01em', textDecoration: 'none', whiteSpace: 'nowrap' }}>Epic TN</Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           {navLinks.map((link) => (
             <a
               key={link.label}
+              className="nav-section"
               href={link.href}
               style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(40,40,40,0.72)', textDecoration: 'none', whiteSpace: 'nowrap', transition: 'color 0.2s ease' }}
               onMouseEnter={(e) => { e.currentTarget.style.color = INK }}
@@ -42,7 +43,7 @@ export default function Nav() {
               {link.label}
             </a>
           ))}
-          <span style={{ width: '1px', height: '16px', background: 'rgba(40,40,40,0.18)' }} />
+          <span className="nav-section" style={{ width: '1px', height: '16px', background: 'rgba(40,40,40,0.18)' }} />
           {user ? (
             <>
               <Link to="/bookings" style={linkStyle} onMouseEnter={lift} onMouseLeave={dim}>My tickets</Link>

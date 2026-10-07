@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import Scene from '../components/Scene.jsx'
+import Slideshow from '../components/Slideshow.jsx'
 import Weather from '../components/Weather.jsx'
 import GettingThere from '../components/GettingThere.jsx'
 import { api } from '../auth.jsx'
@@ -36,7 +36,7 @@ export default function Destination() {
   return (
     <main>
       <section className="hero detail-hero" style={{ '--h': d.hue }}>
-        <div className="hero-scene"><Scene hue={d.hue} bubbles={false} /></div>
+        <Slideshow key={d.id} placeId={d.id} placeName={d.name} />
         <div className="hero-copy">
           <Link to="/" className="back">← All destinations</Link>
           <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>{d.name}</motion.h1>

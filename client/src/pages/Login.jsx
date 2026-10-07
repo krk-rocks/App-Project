@@ -32,7 +32,7 @@ export default function Login() {
   return (
     <main className="auth-wrap">
       <motion.div className="auth-card" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }}>
-        <Link to="/" className="back">← Back to Monsoon</Link>
+        <Link to="/" className="back">← Back to Epic TN</Link>
         <h1>{mode === 'signin' ? 'Welcome back' : 'Create your account'}</h1>
         <p className="muted-l">
           {mode === 'signin'
