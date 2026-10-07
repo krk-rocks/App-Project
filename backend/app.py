@@ -146,32 +146,51 @@ def hubs():
 
 @app.get("/api/destinations/<dest_id>/transport")
 def transport_options(dest_id):
-    """Trains and buses from a boarding point to this destination, for one date."""
+    """Trains and buses to this destination for one date.
+
+    `from` is either a boarding-point code (MAS, MDU, ...) or the id of another place in the
+    app (madurai, kodaikanal, ...). A place with no station of its own uses its railhead for
+    trains and its own bus stand for buses.
+    """
     d = BY_ID.get(dest_id) or abort(404)
     info = transport.DEST_HUB.get(dest_id, {})
     dest_hub = info.get("hub")
     railhead = info.get("railhead", dest_hub)
 
-    frm = request.args.get("from", "")
+    raw = request.args.get("from", "")
     journey = transport.parse_date(request.args.get("date", ""))
     quota = request.args.get("quota", "general")
     if journey is None:
         journey = transport.now_ist().date()
-    if frm not in transport.HUBS:
+
+    notes, origin_place = [], None
+    if raw in BY_ID:
+        if raw == dest_id:
+            return jsonify({"error": "Choose two different places."}), 400
+        origin_place = raw
+        o = transport.DEST_HUB[raw]
+        frm, rail_from = o["hub"], o.get("railhead", o["hub"])
+        if o.get("note"):
+            notes.append(o["note"])
+    elif raw in transport.HUBS:
+        frm = rail_from = raw
+    else:
         return jsonify({"error": "Choose a boarding point."}), 400
+    if info.get("note") and info["note"] not in notes:
+        notes.append(info["note"])
 
     trains = []
-    rail_note = info.get("note")
-    if transport.HUBS[frm]["rail"] and railhead and transport.HUBS[railhead]["rail"] and frm != railhead:
-        trains = transport.search_trains(frm, railhead, journey, quota)
+    if transport.HUBS[rail_from]["rail"] and railhead and transport.HUBS[railhead]["rail"] and rail_from != railhead:
+        trains = transport.search_trains(rail_from, railhead, journey, quota)
     buses = transport.search_buses(frm, dest_hub, journey) if dest_hub and frm != dest_hub else []
 
     return jsonify({
         "destination": {"id": d["id"], "name": d["name"], "hub": dest_hub, "railhead": railhead},
-        "from": {"code": frm, **{k: transport.HUBS[frm][k] for k in ("name", "city", "rail")}},
+        "from": {"code": frm, "place": origin_place, "name": BY_ID[origin_place]["name"] if origin_place else None,
+                 **{k: transport.HUBS[frm][k] for k in ("city", "rail")}, "stop": transport.HUBS[frm]["name"]},
         "date": journey.isoformat(), "quota": quota,
         "tatkal": transport.tatkal_window(journey),
-        "rail_note": rail_note,
+        "rail_note": " ".join(notes) or None,
         "trains": trains,
         "trains_sold_out": bool(trains) and not any(t["any_bookable"] for t in trains),
         "no_rail_link": not trains,

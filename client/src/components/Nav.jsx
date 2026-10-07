@@ -11,13 +11,15 @@ const navLinks = [
 
 export default function Nav() {
   const { user, signOut } = useAuth()
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
+  const onTickets = pathname.startsWith('/tickets')
   const linkStyle = { fontSize: '13px', fontWeight: 500, color: 'rgba(40,40,40,0.72)', textDecoration: 'none', whiteSpace: 'nowrap', transition: 'color 0.2s ease' }
   const dim = (e) => { e.currentTarget.style.color = 'rgba(40,40,40,0.72)' }
   const lift = (e) => { e.currentTarget.style.color = INK }
   return (
     <div style={{ position: 'fixed', top: '18px', left: 0, right: 0, zIndex: 50, display: 'flex', justifyContent: 'center', padding: '0 20px' }}>
       <motion.nav
+        className="nav-bar"
         initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}
         style={{
           display: 'flex', alignItems: 'center', gap: '36px',
@@ -30,7 +32,7 @@ export default function Nav() {
         }}
       >
         <Link to="/" style={{ fontSize: '17px', fontWeight: 700, color: INK, letterSpacing: '-0.01em', textDecoration: 'none', whiteSpace: 'nowrap' }}>Epic TN</Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           {navLinks.map((link) => (
             <a
               key={link.label}
@@ -43,10 +45,18 @@ export default function Nav() {
               {link.label}
             </a>
           ))}
+          <Link
+            to="/tickets"
+            aria-current={onTickets ? 'page' : undefined}
+            style={{ ...linkStyle, ...(onTickets ? { color: INK, fontWeight: 700 } : {}) }}
+            onMouseEnter={lift} onMouseLeave={(e) => { e.currentTarget.style.color = onTickets ? INK : 'rgba(40,40,40,0.72)' }}
+          >
+            Tickets
+          </Link>
           <span className="nav-section" style={{ width: '1px', height: '16px', background: 'rgba(40,40,40,0.18)' }} />
           {user ? (
             <>
-              <Link to="/bookings" style={linkStyle} onMouseEnter={lift} onMouseLeave={dim}>My tickets</Link>
+              <Link to="/bookings" style={linkStyle} onMouseEnter={lift} onMouseLeave={dim}>My bookings</Link>
               <button
                 type="button"
                 onClick={signOut}
@@ -57,7 +67,7 @@ export default function Nav() {
               </button>
             </>
           ) : (
-            <Link to="/login" state={{ next: pathname }} style={{ ...linkStyle, fontWeight: 600, color: INK }}>Sign in</Link>
+            <Link to="/login" state={{ next: pathname + search }} style={{ ...linkStyle, fontWeight: 600, color: INK }}>Sign in</Link>
           )}
         </div>
       </motion.nav>

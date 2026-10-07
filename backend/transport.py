@@ -55,11 +55,12 @@ DEST_HUB = {
     "rameswaram": {"hub": "RMM"},
     "thanjavur": {"hub": "TJ"},
     "kanyakumari": {"hub": "CAPE"},
-    "ooty": {"hub": "UAM", "note": "Reached by the Nilgiri Mountain Railway from Mettupalayam (MTP)."},
+    "ooty": {"hub": "UAM", "railhead": "MTP", "transfer_km": 50,
+             "note": "Ooty's own railway is the slow Nilgiri Mountain Railway. Main-line trains stop at Mettupalayam (MTP), about 1.5 hours away by road."},
     "kodaikanal": {"hub": "KOD", "railhead": "KQN", "transfer_km": 80,
-                   "note": "Kodaikanal has no railway station. Trains run to Kodai Road (KQN), then it is a 3 hr ghat road transfer."},
+                   "note": "Kodaikanal has no railway station. Trains use Kodai Road (KQN), about 3 hours away by ghat road."},
     "mahabalipuram": {"hub": "MAH", "railhead": "CGL", "transfer_km": 29,
-                      "note": "Mahabalipuram has no railway station. The nearest railhead is Chengalpattu (CGL), 29 km away."},
+                      "note": "Mahabalipuram has no railway station. Trains use Chengalpattu (CGL), 29 km away by road."},
     "chennai": {"hub": "MAS"},
     "velankanni": {"hub": "VLNK"},
     "kanchipuram": {"hub": "CJ"},
@@ -120,6 +121,32 @@ TRAINS = [
     {"no": "12693", "name": "Pearl City SF Express", "days": "Daily", "classes": ["2A", "3A", "SL"],
      "route": [("MAS", "19:30", 0), ("CGL", "20:20", 0), ("VM", "21:35", 0), ("TPJ", "00:25", 1), ("MDU", "03:45", 1)]},
 ]
+
+def _return_services(outbound):
+    """A return service for each train: same stops in reverse, number + 1 (the real convention).
+
+    The return leaves the far terminus 40 minutes after the outbound train arrives there, and
+    each stop keeps the same elapsed time from that terminus. Modelled, like the rest of the data.
+    """
+    def minutes(stop):
+        h, m = stop[1].split(":")
+        return stop[2] * 1440 + int(h) * 60 + int(m)
+
+    out = []
+    for t in outbound:
+        last = minutes(t["route"][-1])
+        start = (last % 1440 + 40) % 1440
+        route = []
+        for stop in reversed(t["route"]):
+            at = start + (last - minutes(stop))
+            route.append((stop[0], f"{at % 1440 // 60:02d}:{at % 1440 % 60:02d}", at // 1440))
+        out.append({"no": str(int(t["no"]) + 1), "name": t["name"], "days": t["days"],
+                    "classes": t["classes"], "route": route})
+    return out
+
+
+TRAINS += _return_services(TRAINS)
+assert len({t["no"] for t in TRAINS}) == len(TRAINS), "duplicate train numbers"
 
 # ---------------------------------------------------------------- buses
 
