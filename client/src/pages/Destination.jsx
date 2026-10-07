@@ -5,6 +5,7 @@ import Slideshow from '../components/Slideshow.jsx'
 import Weather from '../components/Weather.jsx'
 import GettingThere from '../components/GettingThere.jsx'
 import { api } from '../auth.jsx'
+import { fetchWeather } from '../weather.js'
 
 const ICON = { temple: '🛕', church: '⛪', mosque: '🕌' }
 const to12 = (t) => {
@@ -24,9 +25,21 @@ export default function Destination() {
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
+    let live = true
     setD(null); setWeather(null); setWErr(false); setNotFound(false)
-    api(`/api/destinations/${id}`).then(setD).catch(() => setNotFound(true))
-    api(`/api/destinations/${id}/weather`).then(setWeather).catch(() => setWErr(true))
+    api(`/api/destinations/${id}`)
+      .then((dest) => {
+        if (!live) return
+        setD(dest)
+        // Weather comes from the visitor's browser first: each visitor has their own IP, so a shared
+        // host's IP being rate-limited by the weather service cannot take it down. The API is the fallback.
+        fetchWeather(dest.lat, dest.lon)
+          .catch(() => api(`/api/destinations/${id}/weather`))
+          .then((w) => { if (live) setWeather(w) })
+          .catch(() => { if (live) setWErr(true) })
+      })
+      .catch(() => { if (live) setNotFound(true) })
+    return () => { live = false }
   }, [id])
 
   if (notFound) return <main className="section dark page"><h2 className="big">Destination not found</h2><Link to="/" className="btn btn-light">← Back home</Link></main>

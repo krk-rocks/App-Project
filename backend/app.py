@@ -56,26 +56,51 @@ def destination(dest_id):
     return jsonify(BY_ID.get(dest_id) or abort(404))
 
 
+WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
+WEATHER_HEADERS = {"User-Agent": "EpicTN/1.0 (+https://github.com/krk-rocks/App-Project)"}
+
+
+def fetch_forecast(d):
+    """One call to Open-Meteo, retried once. Returns (json, None) or (None, reason).
+
+    Free hosts share an outgoing IP that Open-Meteo rate-limits (HTTP 429), so the reason matters:
+    it is logged and returned instead of being swallowed.
+    """
+    reason = "unknown"
+    for attempt in range(2):
+        try:
+            r = requests.get(
+                WEATHER_URL,
+                params={
+                    "latitude": d["lat"], "longitude": d["lon"], "timezone": "auto", "forecast_days": 5,
+                    "current": "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day",
+                    "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+                },
+                headers=WEATHER_HEADERS, timeout=8,
+            )
+            if r.status_code == 429 or r.status_code >= 500:
+                reason = f"Open-Meteo responded {r.status_code}"
+                time.sleep(0.6)
+                continue
+            r.raise_for_status()
+            return r.json(), None
+        except requests.RequestException as e:
+            reason = f"{type(e).__name__}: {str(e)[:100]}"
+    return None, reason
+
+
 @app.get("/api/destinations/<dest_id>/weather")
 def weather(dest_id):
     d = BY_ID.get(dest_id) or abort(404)
     hit = WEATHER_CACHE.get(dest_id)
     if hit and time.time() - hit[0] < CACHE_SECONDS:
         return jsonify(hit[1])
-    try:
-        r = requests.get(
-            "https://api.open-meteo.com/v1/forecast",
-            params={
-                "latitude": d["lat"], "longitude": d["lon"], "timezone": "auto", "forecast_days": 5,
-                "current": "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day",
-                "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
-            },
-            timeout=8,
-        )
-        r.raise_for_status()
-        j = r.json()
-    except requests.RequestException:
-        return jsonify({"error": "Weather service unavailable"}), 502
+    j, reason = fetch_forecast(d)
+    if j is None:
+        app.logger.warning("weather upstream failed for %s: %s", dest_id, reason)
+        if hit:  # an old forecast beats none
+            return jsonify({**hit[1], "stale": True})
+        return jsonify({"error": "Weather service unavailable", "detail": reason}), 502
     cur, day = j["current"], j["daily"]
     out = {
         "timezone": j.get("timezone"),
