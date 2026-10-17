@@ -1,0 +1,8 @@
+# Registers your fine-tuned GGUF with Ollama under the name the app looks for (OLLAMA_MODEL=epic-tn-planner).
+#   ollama create epic-tn-planner -f Modelfile
+# Point FROM at the .gguf you converted (README.md, step 4).
+FROM ./out/epic-tn-q4_k_m.gguf
+
+PARAMETER temperature 0.3
+PARAMETER num_ctx 4096
+PARAMETER num_predict 600

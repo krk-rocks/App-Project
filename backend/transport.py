@@ -16,6 +16,9 @@ import secrets
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import bookings
+import clock
+import railapi
 import store
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -191,7 +194,7 @@ def road_km(a, b):
 
 
 def now_ist():
-    return datetime.now(IST)
+    return clock.now()
 
 
 def parse_date(s):
@@ -306,7 +309,64 @@ def _arrive(dep_hm, dep_day, arr_hm, arr_day):
     return mins
 
 
+def rail_options(frm, to):
+    """Every train that runs frm -> to with its journey time in minutes. Not date-specific, so a planner can
+    compare modes without searching a particular day."""
+    out = []
+    for t in TRAINS:
+        leg = _leg(t, frm, to)
+        if leg:
+            (_, dep, dep_day), (_, arr, arr_day) = leg
+            out.append({"no": t["no"], "name": t["name"], "minutes": _arrive(dep, dep_day, arr, arr_day), "depart": dep})
+    return out
+
+
+_WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+
+def _live_classes(row, mins):
+    """RailRadar's free plan lists no classes, so they are inferred from the train type and length of journey."""
+    kind = row["type"].lower()
+    if "passenger" in kind or "memu" in kind or "demu" in kind:
+        return ["2S"]
+    if mins <= 8 * 60 and 5 * 60 <= int(row["depart"][:2]) * 60 <= 16 * 60:
+        return ["CC", "2S"]
+    return ["2A", "3A", "SL"]
+
+
+def _live_trains(frm, to, journey, quota):
+    rows = railapi.between(frm, to)
+    if not rows:
+        return None
+    wd, out = _WEEKDAYS[journey.weekday()], []
+    km_fallback = rail_km(frm, to)
+    for row in rows:
+        if row["days"] and wd not in row["days"]:
+            continue
+        mins = _arrive(row["depart"], row["dep_day"], row["arrive"], row["arr_day"])
+        if mins <= 0:
+            continue
+        km = round(row["km"]) if row["km"] else km_fallback
+        classes = []
+        for cls in _live_classes(row, mins):
+            av = availability(row["no"], journey, cls, quota)
+            classes.append({"cls": cls, "label": CLASSES[cls]["label"], "ac": CLASSES[cls]["ac"],
+                            "fare": train_fare(cls, km, quota == "tatkal"), "availability": av})
+        out.append({
+            "no": row["no"], "name": row["name"], "days": "Daily" if len(row["days"]) == 7 else ", ".join(d.title() for d in row["days"]),
+            "from": frm, "from_name": HUBS[frm]["name"], "to": to, "to_name": HUBS[to]["name"],
+            "depart": row["depart"], "arrive": row["arrive"], "arrive_next_day": row["arr_day"] > row["dep_day"],
+            "duration": f"{mins // 60}h {mins % 60:02d}m", "km": km, "classes": classes, "live": True,
+            "any_bookable": any(c["availability"]["bookable"] for c in classes),
+        })
+    out.sort(key=lambda t: t["depart"])
+    return out or None
+
+
 def search_trains(frm, to, journey, quota="general"):
+    live = _live_trains(frm, to, journey, quota)
+    if live:
+        return live
     out = []
     for t in TRAINS:
         leg = _leg(t, frm, to)
@@ -349,8 +409,9 @@ def search_buses(frm, to, journey):
         arr = dep + timedelta(minutes=mins)
         seats_total = 36 if "Sleeper" in bus_type else 44
         key = f"BUS|{op['name']}|{bus_type}|{frm}|{to}|{journey.isoformat()}|{i}"
-        taken = sorted(r.sample(range(1, seats_total + 1), r.randint(2, seats_total - 6)))
-        left = seats_total - len(taken) - _held(key)
+        generated = r.sample(range(1, seats_total + 1), r.randint(2, seats_total - 6))
+        taken = sorted(set(generated) | set(store.read()["held_seats"].get(key, [])))   # plus seats people really booked or hold
+        left = seats_total - len(taken)
         out.append({
             "id": f"{frm}-{to}-{i}", "key": key, "operator": op["name"], "kind": op["kind"],
             "type": bus_type, "ac": "AC" in bus_type or "Volvo" in bus_type,
@@ -379,15 +440,24 @@ def nearest_hubs(lat, lon, limit=6, rail_only=False):
 
 # ---------------------------------------------------------------- booking
 
-def _pnr():
-    return str(secrets.randbelow(9_000_000_000) + 1_000_000_000)
+def place_for_hub(code):
+    """Which destination does a station or bus stand belong to? (KQN -> kodaikanal, MTP -> ooty ...)"""
+    for pid, info in DEST_HUB.items():
+        if info["hub"] == code:
+            return pid
+    for pid, info in DEST_HUB.items():
+        if info.get("railhead") == code:
+            return pid
+    return None
 
 
-def _ticket_no():
-    return "TN" + str(secrets.randbelow(900_000) + 100_000)
+def book(user, payload, idem=None):
+    """Validate, price and hold a train or bus booking. Returns ((booking, order), None) or (None, error).
 
-
-def book(user, payload):
+    Nothing the browser sends is trusted for money or timings: the train or bus is looked up again from the
+    search, and its fare, times and seat map are used. The seats are held for bookings.HOLD_SECONDS while the
+    order is paid; paying confirms them, letting the hold lapse releases them.
+    """
     kind = payload.get("kind")
     passengers = payload.get("passengers") or []
     if kind not in ("train", "bus"):
@@ -398,80 +468,82 @@ def book(user, payload):
         if not (p.get("name") or "").strip():
             return None, "Every passenger needs a name."
         age = p.get("age")
-        if not isinstance(age, int) or not 1 <= age <= 120:
+        if not isinstance(age, int) or isinstance(age, bool) or not 1 <= age <= 120:
             return None, "Enter a valid age for every passenger."
     journey = parse_date(payload.get("date"))
     if not journey or journey < now_ist().date():
         return None, "Choose a journey date that has not passed."
+    frm, to = payload.get("from"), payload.get("to")
+    if frm not in HUBS or to not in HUBS or frm == to:
+        return None, "Choose a valid route."
+    place = payload.get("place") if payload.get("place") in DEST_HUB else place_for_hub(to)
 
-    db = store.read()
-    if kind == "train":
-        quota = payload.get("quota", "general")
-        cls = payload.get("cls")
-        if cls not in CLASSES:
-            return None, "Choose a travel class."
-        if quota == "tatkal":
-            win = tatkal_window(journey)
-            open_now = win["ac_time" if CLASSES[cls]["ac"] else "non_ac_time"]
-            if not (win["ac_open"] if CLASSES[cls]["ac"] else win["non_ac_open"]):
-                return None, f"Tatkal for {CLASSES[cls]['label']} is not open yet - it opens at {open_now} on {win['opens_on']}."
-            if len(passengers) > 4:
-                return None, "Tatkal allows a maximum of 4 passengers per booking."
-        av = availability(payload["train_no"], journey, cls, quota)
-        if not av["bookable"]:
-            return None, f"That class is {av['label']} - no seats to confirm."
-        if av["code"] == "AVL" and av["seats"] < len(passengers):
-            return None, f"Only {av['seats']} seat(s) left in that class."
-        key = f"{payload['train_no']}|{journey.isoformat()}|{cls}|{quota}"
-        db["held"][key] = db["held"].get(key, 0) + len(passengers)
-        km = rail_km(payload["from"], payload["to"])
-        fare = train_fare(cls, km, quota == "tatkal")
-        rec = {
-            "id": secrets.token_hex(8), "kind": "train", "pnr": _pnr(), "user": user["email"],
-            "train_no": payload["train_no"], "train_name": payload.get("train_name", ""),
-            "from": payload["from"], "from_name": HUBS[payload["from"]]["name"],
-            "to": payload["to"], "to_name": HUBS[payload["to"]]["name"],
-            "date": journey.isoformat(), "depart": payload.get("depart"), "arrive": payload.get("arrive"),
-            "cls": cls, "cls_label": CLASSES[cls]["label"], "quota": quota,
-            "status": "RAC" if av["code"] == "RAC" else "CONFIRMED",
-            "passengers": passengers, "fare_each": fare, "total": fare["total"] * len(passengers),
-            "booked_at": now_ist().isoformat(timespec="seconds"),
-        }
-    else:
-        seats = payload.get("seats") or []
-        if len(seats) != len(passengers):
-            return None, "Pick one seat per passenger."
-        key = payload.get("key", "")
-        db["held"][key] = db["held"].get(key, 0) + len(passengers)
-        rec = {
-            "id": secrets.token_hex(8), "kind": "bus", "ticket": _ticket_no(), "user": user["email"],
-            "operator": payload.get("operator"), "type": payload.get("type"),
-            "from": payload["from"], "from_name": HUBS[payload["from"]]["name"],
-            "to": payload["to"], "to_name": HUBS[payload["to"]]["name"],
-            "date": journey.isoformat(), "depart": payload.get("depart"), "arrive": payload.get("arrive"),
-            "seats": seats, "status": "CONFIRMED", "passengers": passengers,
-            "fare_each": {"total": payload.get("fare", 0)},
-            "total": (payload.get("fare") or 0) * len(passengers),
-            "booked_at": now_ist().isoformat(timespec="seconds"),
-        }
-    db["bookings"].append(rec)
-    store.commit()
-    return rec, None
+    with store.TX:
+        bookings.sweep()
+        existing = bookings.find_idem(user["email"], idem)
+        if existing:                        # a double-click: hand back the same hold, don't take another
+            return (existing, store.read()["orders"][existing["order_id"]]), None
+        db = store.read()
 
-
-def bookings_for(email):
-    rows = [b for b in store.read()["bookings"] if b["user"] == email]
-    rows.sort(key=lambda b: b["booked_at"], reverse=True)
-    return rows
-
-
-def cancel(email, booking_id):
-    db = store.read()
-    for b in db["bookings"]:
-        if b["id"] == booking_id and b["user"] == email:
-            if b["status"] == "CANCELLED":
-                return None, "That booking is already cancelled."
-            b["status"] = "CANCELLED"
-            store.commit()
-            return b, None
-    return None, "Booking not found."
+        if kind == "train":
+            quota = payload.get("quota", "general")
+            cls = payload.get("cls")
+            if cls not in CLASSES:
+                return None, "Choose a travel class."
+            train = next((t for t in search_trains(frm, to, journey, quota) if t["no"] == payload.get("train_no")), None)
+            if not train:
+                return None, "That train does not run on this route."
+            option = next((c for c in train["classes"] if c["cls"] == cls), None)
+            if not option:
+                return None, "That train has no such class."
+            if quota == "tatkal":
+                win = tatkal_window(journey)
+                opens_at = win["ac_time" if CLASSES[cls]["ac"] else "non_ac_time"]
+                if not (win["ac_open"] if CLASSES[cls]["ac"] else win["non_ac_open"]):
+                    return None, f"Tatkal for {CLASSES[cls]['label']} is not open yet - it opens at {opens_at} on {win['opens_on']}."
+                if len(passengers) > 4:
+                    return None, "Tatkal allows a maximum of 4 passengers per booking."
+            av = option["availability"]
+            if not av["bookable"]:
+                return None, f"That class is {av['label']} - no seats to confirm."
+            if av["code"] == "AVL" and av["seats"] < len(passengers):
+                return None, f"Only {av['seats']} seat(s) left in that class."
+            key = f"{train['no']}|{journey.isoformat()}|{cls}|{quota}"
+            db["held"][key] = db["held"].get(key, 0) + len(passengers)
+            fare = option["fare"]
+            rec = {
+                "id": secrets.token_hex(8), "kind": "train", "user": user["email"], "place": place,
+                "train_no": train["no"], "train_name": train["name"],
+                "from": frm, "from_name": HUBS[frm]["name"], "to": to, "to_name": HUBS[to]["name"],
+                "date": journey.isoformat(), "depart": train["depart"], "arrive": train["arrive"],
+                "cls": cls, "cls_label": CLASSES[cls]["label"], "quota": quota,
+                "final_status": "RAC" if av["code"] == "RAC" else "CONFIRMED",
+                "passengers": passengers, "fare_each": fare, "total": fare["total"] * len(passengers),
+                "hold": {"type": "train", "key": key, "n": len(passengers)},
+            }
+        else:
+            bus_id = payload.get("bus_id") or f"{frm}-{to}-{str(payload.get('key', '')).rsplit('|', 1)[-1]}"
+            bus = next((b for b in search_buses(frm, to, journey) if b["id"] == bus_id), None)
+            if not bus:
+                return None, "That bus is not running on this route and date."
+            seats = payload.get("seats") or []
+            if len(seats) != len(passengers):
+                return None, "Pick one seat per passenger."
+            if any(isinstance(s, bool) or not isinstance(s, int) for s in seats) or len(set(seats)) != len(seats):
+                return None, "Choose different seats for each passenger."
+            if any(not 1 <= s <= bus["seats_total"] for s in seats):
+                return None, "That seat does not exist on this bus."
+            gone = [s for s in seats if s in bus["taken"]]
+            if gone:
+                return None, f"Seat {', '.join(map(str, gone))} was just taken. Please choose another."
+            db["held_seats"].setdefault(bus["key"], []).extend(seats)
+            rec = {
+                "id": secrets.token_hex(8), "kind": "bus", "user": user["email"], "place": place,
+                "operator": bus["operator"], "type": bus["type"],
+                "from": frm, "from_name": HUBS[frm]["name"], "to": to, "to_name": HUBS[to]["name"],
+                "date": journey.isoformat(), "depart": bus["depart"], "arrive": bus["arrive"],
+                "seats": sorted(seats), "final_status": "CONFIRMED", "passengers": passengers,
+                "fare_each": {"total": bus["fare"]}, "total": bus["fare"] * len(passengers),
+                "hold": {"type": "bus", "key": bus["key"], "seats": list(seats)},
+            }
+        return bookings.add_pending(user, rec, idem), None

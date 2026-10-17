@@ -14,7 +14,17 @@ import threading
 DATA_DIR = os.environ.get("DATA_DIR") or os.path.dirname(__file__)
 PATH = os.path.join(DATA_DIR, "store.json")
 _LOCK = threading.Lock()
-_EMPTY = {"users": {}, "tokens": {}, "bookings": [], "held": {}}
+_EMPTY = {
+    "users": {}, "tokens": {}, "bookings": [], "held": {},
+    "held_seats": {},                      # bus key -> seat numbers booked or on hold
+    "wallets": {}, "ledger": [],           # email -> {balance in paise}; append-only money movements
+    "orders": {}, "events": {}, "refunds": [],
+    "reviews": [], "trips": {},
+}
+# Held around any read-check-write sequence (a seat check then a hold, a payment then a confirmation)
+# so two requests cannot both pass the check. A re-entrant lock, so helpers can nest.
+TX = threading.RLock()
+UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
 
 
 def _read():

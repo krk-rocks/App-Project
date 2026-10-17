@@ -133,6 +133,7 @@ export default function Tickets() {
           {fromName && toName && <h2 className="tk-route">{fromName} <span aria-hidden="true">→</span><span className="sr-only"> to </span> {toName}</h2>}
 
           <TransportResults
+            placeId={to}
             data={data} loading={loading} tab={tab} setTab={setTab} quota={quota} setQuota={setQuota} date={date}
             noTrainText={`No direct train between ${fromName} and ${toName}.`}
             onBooked={() => setNonce((n) => n + 1)}

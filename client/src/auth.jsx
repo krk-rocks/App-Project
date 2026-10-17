@@ -8,12 +8,13 @@ export const API_BASE = RAW_BASE.endsWith('/') ? RAW_BASE.slice(0, -1) : RAW_BAS
 const KEY = 'monsoon.token'
 const AuthContext = createContext(null)
 
-export function api(path, { method = 'GET', body, token } = {}) {
+export function api(path, { method = 'GET', body, token, headers } = {}) {
   const t = token ?? localStorage.getItem(KEY)
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData      // the browser sets the multipart boundary itself
   return fetch(API_BASE + path, {
     method,
-    headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(t ? { Authorization: `Bearer ${t}` } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
+    headers: { ...(body && !isForm ? { 'Content-Type': 'application/json' } : {}), ...(t ? { Authorization: `Bearer ${t}` } : {}), ...(headers || {}) },
+    body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
   }).then(async (r) => {
     // Never hand back a silent {} - a misrouted call can return the HTML shell with a
     // 200, and callers that spread the result then crash the whole tree.
@@ -27,7 +28,12 @@ export function api(path, { method = 'GET', body, token } = {}) {
           : `Request failed (${r.status}).`,
       )
     }
-    if (!r.ok) throw new Error(data.error || 'Something went wrong. Try again.')
+    if (!r.ok) {
+      const err = new Error(data.error || 'Something went wrong. Try again.')
+      err.status = r.status                                  // callers such as the trip editor react to 409 conflicts
+      err.data = data
+      throw err
+    }
     return data
   })
 }

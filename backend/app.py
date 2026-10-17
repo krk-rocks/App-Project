@@ -5,7 +5,17 @@ import requests
 from flask import Flask, g, jsonify, request, abort
 from flask_cors import CORS
 
+import railapi
+
+railapi.load_env()                  # backend/.env (git-ignored) may hold RAIL_API_KEY; real environment variables win
+
 import auth
+import bookings
+import routes_money
+import routes_planner
+import routes_reviews
+import routes_stay
+import routes_trips
 import store
 import transport
 from data import DESTINATIONS
@@ -16,6 +26,13 @@ app = Flask(__name__)
 # CORS_ORIGINS is a comma-separated list; "*" (the default) suits a public read-mostly demo.
 _origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",") if o.strip()]
 CORS(app, resources={r"/api/*": {"origins": _origins}}, supports_credentials=False)
+
+app.register_blueprint(routes_money.bp)
+app.register_blueprint(routes_planner.bp)
+app.register_blueprint(routes_stay.bp)
+app.register_blueprint(routes_reviews.bp)
+app.register_blueprint(routes_trips.bp)
+app.config["MAX_CONTENT_LENGTH"] = 18 * 1024 * 1024        # three photos plus the form; bigger requests get a 413
 
 BY_ID = {d["id"]: d for d in DESTINATIONS}
 WEATHER_CACHE = {}
@@ -178,6 +195,7 @@ def transport_options(dest_id):
     trains and its own bus stand for buses.
     """
     d = BY_ID.get(dest_id) or abort(404)
+    bookings.sweep()          # lapsed holds must not hide seats
     info = transport.DEST_HUB.get(dest_id, {})
     dest_hub = info.get("hub")
     railhead = info.get("railhead", dest_hub)
@@ -225,30 +243,9 @@ def transport_options(dest_id):
     })
 
 
-# ------------------------------------------------------------------ bookings
-
-@app.post("/api/bookings")
-@auth.require_auth
-def create_booking():
-    rec, err = transport.book(g.user, request.get_json(silent=True) or {})
-    if err:
-        return jsonify({"error": err}), 400
-    return jsonify(rec), 201
-
-
-@app.get("/api/bookings")
-@auth.require_auth
-def my_bookings():
-    return jsonify(transport.bookings_for(g.user["email"]))
-
-
-@app.post("/api/bookings/<booking_id>/cancel")
-@auth.require_auth
-def cancel_booking(booking_id):
-    rec, err = transport.cancel(g.user["email"], booking_id)
-    if err:
-        return jsonify({"error": err}), 400
-    return jsonify(rec)
+@app.errorhandler(413)
+def too_large(_):
+    return jsonify({"error": "That upload is too large. Keep photos under 5 MB each."}), 413
 
 
 @app.get("/api/health")

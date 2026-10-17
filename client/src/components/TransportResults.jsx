@@ -1,25 +1,12 @@
-import { useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api, useAuth } from '../auth.jsx'
-
-const rupees = (n) => '₹' + Number(n || 0).toLocaleString('en-IN')
-const to12 = (t) => {
-  if (!t) return ''
-  const [h, m] = t.split(':').map(Number)
-  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`
-}
+import { inr as rupees, newKey, to12 } from '../format.js'
+import Overlay from './Overlay.jsx'
+import PaymentSheet from './PaymentSheet.jsx'
 
 const AV_TONE = { AVL: 'on', RAC: 'rac', WL: 'off', REGRET: 'off', NA: 'na' }
-
-/* The panel sits inside a stacking context, so overlays go to <body> to stay on top. */
-const Overlay = ({ children, onClose }) => createPortal(
-  <motion.div className="sheet-back" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
-    {children}
-  </motion.div>,
-  document.body,
-)
 
 /* ---------------------------------------------------------------- seat map */
 
@@ -66,7 +53,9 @@ function SeatMap({ bus, picked, onPick, max }) {
 
 const blankPax = () => ({ name: '', age: '', gender: 'M' })
 
-function BookingSheet({ offer, date, onClose, onDone }) {
+function BookingSheet({ offer, date, placeId, onClose, onDone }) {
+  const keyRef = useRef(newKey())                                   // one key per sheet: a double click makes one hold, not two
+  const [held, setHeld] = useState(null)                           // {booking, order, wallet_balance} once the seats are held
   const [pax, setPax] = useState([blankPax()])
   const [seats, setSeats] = useState([])
   const [err, setErr] = useState('')
@@ -87,23 +76,32 @@ function BookingSheet({ offer, date, onClose, onDone }) {
   async function confirm(e) {
     e.preventDefault()
     setErr('')
-    if (isBus && seats.length !== pax.length) return setErr(`Pick ${pax.length} seat${pax.length > 1 ? 's' : ''} — one per passenger.`)
+    if (isBus && seats.length !== pax.length) return setErr(`Pick ${pax.length} seat${pax.length > 1 ? 's' : ''}, one per passenger.`)
     setBusy(true)
     const passengers = pax.map((p) => ({ name: p.name.trim(), age: Number(p.age), gender: p.gender }))
+    // Only what the customer chose goes up. Fare, times and seat availability are decided by the server.
     const body = isBus
-      ? { kind: 'bus', date, seats, key: offer.bus.key, operator: offer.bus.operator, type: offer.bus.type,
-          from: offer.bus.from, to: offer.bus.to, depart: offer.bus.depart, arrive: offer.bus.arrive,
-          fare: offer.bus.fare, passengers }
-      : { kind: 'train', date, quota: offer.quota, cls: offer.cls.cls, train_no: offer.train.no,
-          train_name: offer.train.name, from: offer.train.from, to: offer.train.to,
-          depart: offer.train.depart, arrive: offer.train.arrive, passengers }
+      ? { kind: 'bus', date, bus_id: offer.bus.id, seats, from: offer.bus.from, to: offer.bus.to, place: placeId, passengers }
+      : { kind: 'train', date, quota: offer.quota, cls: offer.cls.cls, train_no: offer.train.no, from: offer.train.from, to: offer.train.to, place: placeId, passengers }
     try {
-      onDone(await api('/api/bookings', { method: 'POST', body }))
+      setHeld(await api('/api/bookings', { method: 'POST', body, headers: { 'Idempotency-Key': keyRef.current } }))
     } catch (e2) {
       setErr(e2.message)
     } finally {
       setBusy(false)
     }
+  }
+
+  if (held) {
+    const b = held.booking
+    return (
+      <PaymentSheet
+        order={held.order} balance={held.wallet_balance} bookingId={b.id} onClose={onClose}
+        lines={[isBus ? `${offer.bus.operator} · ${offer.bus.type}` : `${offer.train.no} ${offer.train.name} · ${offer.cls.label}`,
+                `${b.from_name} → ${b.to_name} · ${date}`, `${pax.length} passenger${pax.length > 1 ? 's' : ''}${isBus ? ` · seat${seats.length > 1 ? 's' : ''} ${seats.join(', ')}` : ''}`]}
+        onPaid={(r) => onDone(r.booking)}
+      />
+    )
   }
 
   return (
@@ -167,9 +165,9 @@ function BookingSheet({ offer, date, onClose, onDone }) {
             <strong className="total">{rupees(total)}</strong>
             <span className="muted small"> for {pax.length} passenger{pax.length > 1 ? 's' : ''}</span>
           </div>
-          <button className="btn btn-light" disabled={busy}>{busy ? 'Booking…' : 'Confirm booking'}</button>
+          <button className="btn btn-light" disabled={busy}>{busy ? 'Holding seats…' : 'Continue to payment'}</button>
         </footer>
-        <p className="muted small demo-note">Simulated booking — no payment is taken and no real seat is reserved.</p>
+        <p className="muted small demo-note">Your seats are held for 10 minutes while you pay. Demo booking: nothing real is reserved.</p>
       </motion.form>
     </Overlay>
   )
@@ -213,7 +211,7 @@ function Ticket({ b, onClose }) {
 
 /* Tabs, quota, train and bus lists, and the booking flow for one search result. Used by the
    destination panel and by the Tickets page, so both book the same way. */
-export default function TransportResults({ data, loading, tab, setTab, quota, setQuota, date, noTrainText, onBooked }) {
+export default function TransportResults({ data, loading, tab, setTab, quota, setQuota, date, noTrainText, onBooked, placeId }) {
   const { user } = useAuth()
   const { pathname, search } = useLocation()
   const [offer, setOffer] = useState(null)
@@ -266,6 +264,7 @@ export default function TransportResults({ data, loading, tab, setTab, quota, se
                   <div>
                     <strong>{t.no} {t.name}</strong>
                     <div className="muted small">{t.days} · {t.km} km · {t.from_name} → {t.to_name}</div>
+                    <div className="muted small">{t.live ? 'Live timetable (RailRadar) · seat status and fares are simulated' : 'Built-in timetable · seat status is simulated'}</div>
                   </div>
                   <div className="train-time">
                     <span>{to12(t.depart)}</span>
@@ -349,7 +348,7 @@ export default function TransportResults({ data, loading, tab, setTab, quota, se
       </p>
 
       <AnimatePresence>
-        {offer && <BookingSheet offer={offer} date={date} onClose={() => setOffer(null)}
+        {offer && <BookingSheet offer={offer} date={date} placeId={placeId} onClose={() => setOffer(null)}
                                 onDone={(b) => { setOffer(null); setTicket(b); onBooked?.() }} />}
         {ticket && <Ticket b={ticket} onClose={() => setTicket(null)} />}
       </AnimatePresence>

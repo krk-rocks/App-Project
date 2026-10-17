@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Slideshow from '../components/Slideshow.jsx'
 import Weather from '../components/Weather.jsx'
 import GettingThere from '../components/GettingThere.jsx'
+import CrowdCalendar from '../components/CrowdCalendar.jsx'
+import StayPanel from '../components/StayPanel.jsx'
+import Reviews from '../components/Reviews.jsx'
 import { api } from '../auth.jsx'
 import { fetchWeather } from '../weather.js'
 
@@ -19,10 +22,12 @@ const reveal = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0
 
 export default function Destination() {
   const { id } = useParams()
+  const [sp] = useSearchParams()
   const [d, setD] = useState(null)
   const [weather, setWeather] = useState(null)
   const [wErr, setWErr] = useState(false)
   const [notFound, setNotFound] = useState(false)
+  const [stayDate, setStayDate] = useState(/^\d{4}-\d{2}-\d{2}$/.test(sp.get('checkin') || '') ? sp.get('checkin') : null)        // chosen on the crowd calendar, used by the stay search
 
   useEffect(() => {
     let live = true
@@ -57,6 +62,7 @@ export default function Destination() {
           <span className="chip light">{d.category}</span>
           <div className="hero-actions" style={{ marginTop: '18px' }}>
             <a href="#getting-there" className="btn btn-light">Book a train or bus →</a>
+            <a href="#stay" className="btn btn-light">Where to stay</a>
           </div>
         </div>
       </section>
@@ -80,6 +86,17 @@ export default function Destination() {
 
           <div id="getting-there" className="span-all">
             <GettingThere destId={d.id} destName={d.name} />
+          </div>
+
+          <motion.section className="panel wide span-all" id="when-to-go" {...reveal}>
+            <h2>When to go</h2>
+            <p className="muted-l small">How busy {d.name} is likely to be over the next 12 weeks. Pick a day to see why.</p>
+            <CrowdCalendar destId={d.id} destName={d.name}
+              onPickDate={(day) => { setStayDate(day); document.getElementById('stay')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} />
+          </motion.section>
+
+          <div id="stay" className="span-all">
+            <StayPanel destId={d.id} destName={d.name} checkIn={stayDate} onCheckIn={setStayDate} />
           </div>
 
           <motion.section className="panel wide" {...reveal}>
@@ -117,6 +134,11 @@ export default function Destination() {
               })}
             </ul>
             <p className="muted-l small">Timings are indicative and change on festival days.</p>
+          </motion.section>
+
+          <motion.section className="panel wide span-all" id="reviews" {...reveal}>
+            <h2>Traveller reviews</h2>
+            <Reviews place={d.id} placeName={d.name} />
           </motion.section>
         </div>
       </section>

@@ -11,6 +11,7 @@ __pycache__/
 backend/store.json
 backend/store.json.tmp
 backend/store.json.probe
+backend/uploads/
 *.sqlite
 *.sqlite3
 *.db
@@ -46,3 +47,8 @@ Thumbs.db
 !.vscode/launch.json
 !.vscode/settings.json
 !.vscode/tasks.json
+
+ml/data/
+ml/out/
+*.gguf
+backend/rail_cache.json

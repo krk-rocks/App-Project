@@ -91,6 +91,7 @@ export default function GettingThere({ destId, destName }) {
       {geo.msg && <p className={'muted small geo ' + geo.state}>{geo.msg}</p>}
 
       <TransportResults
+        placeId={destId}
         data={data} loading={loading} tab={tab} setTab={setTab} quota={quota} setQuota={setQuota} date={date}
         noTrainText={`No train runs all the way to ${destName}.`}
         onBooked={() => setNonce((n) => n + 1)}

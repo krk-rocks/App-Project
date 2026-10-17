@@ -1,0 +1,7 @@
+# Only for fine-tuning on a Colab/Kaggle GPU. The web app itself does not need any of this.
+torch
+transformers
+peft
+trl
+datasets
+accelerate
