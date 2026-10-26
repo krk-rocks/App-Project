@@ -1,0 +1,43 @@
+DAVID: Welcome to the Epic T N build log. Today we walk through a travel app for Tamil Nadu, what it does, and, just as important, what is real inside it and what is only pretend.
+ZIRA: I'm Zira. David, give me the one sentence version.
+DAVID: Epic T N helps you discover a place, plan a trip, book it, and split the bill with your friends, all in one web app. React on the front, Flask on the back.
+ZIRA: Start with discovery. What does a visitor see?
+DAVID: Guides to temple towns, hill stations and coasts. Live weather for each destination, local festivals month by month, and opening times for temples, churches and mosques.
+ZIRA: And then the tickets part. This is the bit people ask about first.
+DAVID: Right. You pick where you are travelling from and to, and the app shows trains and buses. Here is the honest bit. The train timetable is now live, pulled from a service called Rail Radar. That gives real train numbers, names, times and running days.
+ZIRA: But not seats.
+DAVID: Not seats. The free plan has no seat data, so availability, waiting lists and fares are simulated. And there is no free public way to actually book an Indian train ticket, so booking is a simulation too. The screen says so on every train.
+ZIRA: What about the quota? I heard it is small.
+DAVID: A hundred requests a month. So every route is cached for a day, a failure is remembered for an hour, and when the budget runs out the app quietly falls back to its built in timetable.
+ZIRA: Good. Now the six new modules. Hotels first.
+DAVID: Hotels and homestays with per night inventory. If you stay three nights, each of those three nights must have a free room. The check out day stays free for the next guest. When you start booking, the room is held for ten minutes while you pay. If you walk away, the hold lapses and the room comes back.
+ZIRA: And the hotel listings themselves?
+DAVID: Generated sample data, clearly labelled sample. The booking logic is real, the hotels are not.
+ZIRA: Next, payments.
+DAVID: A mock gateway with test cards and U P I. Money is stored as whole paise, never decimals, so there are no rounding surprises. Every payment carries an idempotency key, so a double click or a retry never charges you twice. Webhooks are signed, with replay protection. And cancelling follows refund tiers into a wallet.
+ZIRA: No real card numbers anywhere.
+DAVID: None entered, none stored.
+ZIRA: Crowd forecasting and reviews?
+DAVID: A calendar scores each day from festivals and season, and that score feeds dynamic hotel pricing. Reviews are only for travellers with a completed booking. Photos are re encoded so hidden location data is stripped, ratings use a Bayesian average so one five star review does not beat a hundred good ones, and people can report abusive reviews.
+ZIRA: Then group trips, my favourite.
+DAVID: Friends join a trip and add expenses. The app splits each expense exactly, using a largest remainder method so the paise always add up. Then settle up works out the fewest payments: match the biggest debtor with the biggest creditor, repeat. For n people that is at most n minus one transfers.
+ZIRA: And if two people edit at once?
+DAVID: The second edit gets a conflict message instead of silently overwriting the first. That was a bug we caught and fixed.
+ZIRA: Now the headline feature. The A I trip planner.
+DAVID: You type something like, four days, Madurai and Rameswaram, two travellers. The planner is ordinary code. It finds the best order of towns with a dynamic programming method called Held Karp, schedules stops inside real opening hours, and keeps the budget in check.
+ZIRA: So where does the language model come in?
+DAVID: Only for wording. The code decides every fact. The model writes the friendly intro, a summary and a tip for each day. Then a fact checker rejects any sentence that contains a time, number or place that is not in the plan. If the model slips, the app uses template wording instead.
+ZIRA: That makes the model almost safe to be wrong.
+DAVID: Exactly the point.
+ZIRA: The big question you were asked. Can your PC train that model?
+DAVID: A Quadro P six twenty with two gigabytes of video memory, an i five seven six hundred, eight gigabytes of RAM. Honest answer: no. Fine tuning even a half billion parameter model needs roughly four to six gigabytes of video memory.
+ZIRA: But it can run one.
+DAVID: A small model, quantised to four bits, around one and a half billion parameters, should run on the C P U at roughly five to ten tokens a second. That figure is an estimate, nothing is installed yet. To train, use a free Colab or Kaggle G P U, make a small adapter, convert it, and run it locally with Ollama. And you might not need to train at all, because a stock small model already does this job.
+ZIRA: How do you know any of this works?
+DAVID: Two hundred and eight backend tests pass. Some deliberately widen race windows to prove the locking works, and some use mutation checks, where we break the code on purpose and confirm a test fails. The language model client is tested against a mock server, so a real model run is still ahead of us.
+ZIRA: Summing up what is real and what is not.
+DAVID: Real: train timetables, weather, festivals, the planner's routing, and all the booking, hold, refund and settle up logic. Simulated: seats and fares, payments, hotel listings, buses. Data lives in a J S O N file, so a real database is the next step before real users.
+ZIRA: Next steps?
+DAVID: Postgres, try a stock model in Ollama, maybe live train running status, and redeploy with the new keys.
+ZIRA: That's the Epic T N build log. Thanks for listening.
+DAVID: Thanks everyone. Safe travels.
